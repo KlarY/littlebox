@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core
+QT       += core network sql
 
 QT       -= gui
 
@@ -16,3 +16,5 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp
+
+QMAKE_CXXFLAGS += -std=c++11
