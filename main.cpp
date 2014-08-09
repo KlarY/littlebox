@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 
     LittleBoxServer server;
 
-    if(!server.listen(QHostAddress::LocalHost, 2048))
+    if(!server.listen())
     {
         qDebug() << "unable to start the server : " + server.errorString() + ".";
 
@@ -17,6 +17,10 @@ int main(int argc, char *argv[])
     }
 
     qDebug() << "the server is running...";
+
+    qDebug() << "address :" << server.serverAddress().toString();
+
+    qDebug() << "port :" << server.serverPort();
 
     return a.exec();
 }
