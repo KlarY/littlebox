@@ -16,11 +16,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    qDebug() << "the server is running...";
-
-    qDebug() << "address :" << server.serverAddress().toString();
-
-    qDebug() << "port :" << server.serverPort();
+    qDebug() << __TIME__ << "the server is running...";
 
     return a.exec();
 }

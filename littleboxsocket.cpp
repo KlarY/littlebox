@@ -8,16 +8,9 @@ LittleBoxSocket::LittleBoxSocket()
 
 void LittleBoxSocket::parseRequest()
 {
-    QStringList lines;
+    QByteArray request = this->readAll();
 
-    while(this->canReadLine())
-    {
-        lines.append(this->readLine());
-    }
-
-    qDebug() << lines;
-
-    close();
+    qDebug() << request;
 }
 
 void LittleBoxSocket::sendResponse()
