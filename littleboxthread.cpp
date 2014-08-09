@@ -7,8 +7,6 @@ LittleBoxThread::LittleBoxThread(int socketDescriptor, QObject* parent) : socket
 
 void LittleBoxThread::run()
 {
-    qDebug() << __FUNCTION__;
-
     LittleBoxSocket socket;
 
     if(!socket.setSocketDescriptor(socketDescriptor))
@@ -17,4 +15,6 @@ void LittleBoxThread::run()
 
         return;
     }
+
+    exec();
 }

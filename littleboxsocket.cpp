@@ -2,15 +2,12 @@
 
 LittleBoxSocket::LittleBoxSocket()
 {
-    qDebug() << __FUNCTION__;
-
-    connect(this, SIGNAL(readyRead()), this, SLOT(parseRequest()));
+    connect(this, SIGNAL(readyRead()), this, SLOT(parseRequest()), Qt::DirectConnection);
+    connect(this, SIGNAL(disconnected()), this, SLOT(deleteLater()), Qt::DirectConnection);
 }
 
 void LittleBoxSocket::parseRequest()
 {
-    qDebug() << __FUNCTION__;
-
     QStringList lines;
 
     while(this->canReadLine())
