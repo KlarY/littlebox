@@ -16,6 +16,8 @@ void LittleBoxSocket::parseRequest()
     }
 
     qDebug() << lines;
+
+    close();
 }
 
 void LittleBoxSocket::sendResponse()
