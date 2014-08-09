@@ -2,7 +2,6 @@
 #define LITTLEBOXTHREAD_H
 
 #include <QThread>
-#include <QTcpSocket>
 
 class LittleBoxThread : public QThread
 {
@@ -11,12 +10,11 @@ class LittleBoxThread : public QThread
     int socketDescriptor;
 
 public:
-    explicit LittleBoxThread(int socketDescriptor, QObject *parent);
+    explicit LittleBoxThread(int socketDescriptor, QObject* parent);
 
     void run();
 
 signals:
-    void error(QTcpSocket::SocketError socketError);
 
 public slots:
 

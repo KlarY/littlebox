@@ -17,10 +17,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     littleboxserver.cpp \
-    littleboxthread.cpp
+    littleboxthread.cpp \
+    littleboxsocket.cpp
 
 QMAKE_CXXFLAGS += -std=c++11
 
 HEADERS += \
     littleboxserver.h \
-    littleboxthread.h
+    littleboxthread.h \
+    littleboxsocket.h

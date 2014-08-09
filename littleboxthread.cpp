@@ -1,39 +1,20 @@
 #include "littleboxthread.h"
+#include "littleboxsocket.h"
 
-#include <QtNetwork>
-
-LittleBoxThread::LittleBoxThread(int socketDescriptor, QObject *parent)
-    : QThread(parent), socketDescriptor(socketDescriptor)
+LittleBoxThread::LittleBoxThread(int socketDescriptor, QObject* parent) : socketDescriptor(socketDescriptor), QThread(parent)
 {
 }
 
 void LittleBoxThread::run()
 {
-    QTcpSocket tcpSocket;
+    qDebug() << __FUNCTION__;
 
-    if(!tcpSocket.setSocketDescriptor(socketDescriptor))
+    LittleBoxSocket socket;
+
+    if(!socket.setSocketDescriptor(socketDescriptor))
     {
-        emit error(tcpSocket.error());
+        qDebug() << socket.errorString();
 
         return;
     }
-
-    QByteArray response;
-
-    QDataStream out(&response, QIODevice::WriteOnly);
-
-    out.setVersion(QDataStream::Qt_5_3);
-
-    out << quint16(0);
-
-    out << "Hello, LittleBox.";
-
-    out.device()->seek(0);
-
-    out << quint16(response.size() - sizeof(quint16));
-
-    tcpSocket.write(response);
-
-    tcpSocket.disconnectFromHost();
-    tcpSocket.waitForDisconnected();
 }
