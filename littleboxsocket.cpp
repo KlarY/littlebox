@@ -22,9 +22,11 @@ void LittleBoxSocket::parseRequest()
 
     QStringList lines = headers.split(QRegExp("\r\n"));
 
-    for(QString line : lines)
+    QStringList tokens = lines[0].split(' ');
+
+    for(QString token : tokens)
     {
-        qDebug() << line;
+        qDebug() << token;
     }
 
     sendResponse(body);
