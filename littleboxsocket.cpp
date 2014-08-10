@@ -31,7 +31,7 @@ void LittleBoxSocket::parseRequest()
 //        qDebug() << componet;
 //    }
 
-    QStringList lines = headers.split(QRegExp("[ \r\n][ \r\n]*")/*, QString::SkipEmptyParts*/);
+    QStringList lines = headers.split(QRegExp("\r\n")/*, QString::SkipEmptyParts*/);
 
     for(QString line : lines)
     {
