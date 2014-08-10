@@ -14,24 +14,13 @@ void LittleBoxSocket::parseRequest()
 
     QByteArray request = this->readAll();
 
-    QStringList componets = QString(request).split(QRegExp("\r\n\r\n"));
+    QStringList components = QString(request).split(QRegExp("\r\n\r\n"));
 
-    QString headers = componets[0];
+    QString headers = components[0];
 
-    QString body = componets[1];
+    QString body = components[1];
 
-    qDebug() << headers;
-
-    qDebug() << body;
-
-    qDebug() << componets.size();
-
-//    for(QString componet : componets)
-//    {
-//        qDebug() << componet;
-//    }
-
-    QStringList lines = headers.split(QRegExp("\r\n")/*, QString::SkipEmptyParts*/);
+    QStringList lines = headers.split(QRegExp("\r\n"));
 
     for(QString line : lines)
     {
@@ -50,9 +39,10 @@ void LittleBoxSocket::sendResponse(QString parameter)
     response << "HTTP/1.1 200 OK\r\n"
              << "content-type: text/html; charset=\"utf-8\"\r\n"
              << "\r\n"
-             << parameter
-             << this->socketDescriptor();
+             << parameter;
+
     this->close();
+
 //    this->disconnectFromHost();
 //    this->waitForDisconnected();
 }
