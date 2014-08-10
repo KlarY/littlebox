@@ -24,21 +24,21 @@ void LittleBoxSocket::parseRequest()
 
     qDebug() << body;
 
-//    qDebug() << componets.size();
+    qDebug() << componets.size();
 
 //    for(QString componet : componets)
 //    {
 //        qDebug() << componet;
 //    }
 
-//    QStringList lines = QString(request).split(QRegExp("[ \r\n][ \r\n]*")/*, QString::SkipEmptyParts*/);
+    QStringList lines = headers.split(QRegExp("[ \r\n][ \r\n]*")/*, QString::SkipEmptyParts*/);
 
-//    for(QString line : lines)
-//    {
-//        qDebug() << line;
-//    }
+    for(QString line : lines)
+    {
+        qDebug() << line;
+    }
 
-    sendResponse(request);
+    sendResponse(body);
 }
 
 void LittleBoxSocket::sendResponse(QString parameter)
