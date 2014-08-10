@@ -7,7 +7,7 @@ class LittleBoxSocket : public QTcpSocket
 {
     Q_OBJECT
 
-    void sendResponse(QString);
+    void sendResponse(QString, QString);
 
 public:
     LittleBoxSocket();
