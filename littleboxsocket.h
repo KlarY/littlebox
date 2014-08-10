@@ -3,9 +3,13 @@
 
 #include <QTcpSocket>
 
+class LittleBoxDBUtil;
+
 class LittleBoxSocket : public QTcpSocket
 {
     Q_OBJECT
+
+    LittleBoxDBUtil* dbWorker;
 
     void sendResponse(QString, QString);
 

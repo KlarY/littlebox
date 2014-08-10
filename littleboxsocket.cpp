@@ -1,4 +1,5 @@
 #include "littleboxsocket.h"
+#include "littleboxdbutil.h"
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -7,6 +8,8 @@
 
 LittleBoxSocket::LittleBoxSocket()
 {
+    dbWorker = new LittleBoxDBUtil();
+
     connect(this, SIGNAL(readyRead()), this, SLOT(parseRequest()), Qt::DirectConnection);
 //    connect(this, SIGNAL(disconnected()), this, SLOT(deleteLater()), Qt::DirectConnection);
 }
@@ -77,11 +80,30 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString password = argvs["password"].toString();
 
-                    response << "HTTP/1.1 200 OK\r\n"
-                             << "content-type: text/json; charset=\"utf-8\"\r\n"
-                             << "content-length:" << ""
-                             << "\r\n"
-                             << "";
+                    QString sql = QString("SELECT uid FROM usrs WHERE email = '%1'").arg(email);
+
+                    QSqlQuery query = dbWorker->execute(sql);
+
+                    if(0 == query.size() || -1 == query.size() )
+                    {
+                        sql = QString("INSERT INTO usrs (email, password) VALUES ('%1', '%2')").arg(email).arg(password);
+
+                        dbWorker->execute(sql);
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: text/json; charset=\"utf-8\"\r\n"
+                                 << "content-length:" << ""
+                                 << "\r\n"
+                                 << "{\"status\":\"success\"}";
+                    }
+                    else
+                    {
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: text/json; charset=\"utf-8\"\r\n"
+                                 << "content-length:" << ""
+                                 << "\r\n"
+                                 << "{\"status\":\"failed\"}";
+                    }
                 }
             }
 
