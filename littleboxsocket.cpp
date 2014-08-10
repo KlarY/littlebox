@@ -1,5 +1,10 @@
 #include "littleboxsocket.h"
 
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QJsonDocument>
+#include <QJsonParseError>
+
 LittleBoxSocket::LittleBoxSocket()
 {
     connect(this, SIGNAL(readyRead()), this, SLOT(parseRequest()), Qt::DirectConnection);
@@ -36,7 +41,7 @@ void LittleBoxSocket::parseRequest()
     }
     else
     {
-        sendResponse("display_error_msg\r\n", request);
+        sendResponse("display_error_msg", request);
     }
 }
 
@@ -46,10 +51,51 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
     response.setAutoDetectUnicode(true);
 
-    response << "HTTP/1.1 200 OK\r\n"
-             << "content-type: text/html; charset=\"utf-8\"\r\n"
-             << "\r\n"
-             << method << parameter;
+    if("display_error_msg" == method)
+    {
+        response << "HTTP/1.1 400 Bad Request\r\n"
+                 << "content-type: text/html; charset=\"utf-8\"\r\n"
+                 //<< "content-length:" << ""
+                 << "\r\n"
+                 << "Bad Request";
+    }
+    else
+    {
+        QJsonParseError parseStatus;
+
+        QJsonDocument doc = QJsonDocument::fromJson(parameter.toUtf8(), &parseStatus);
+
+        if(parseStatus.error == QJsonParseError::NoError)
+        {
+            if("signup" == method)
+            {
+                if(doc.isObject())
+                {
+                    QJsonObject argvs= doc.object();
+
+                    response << "HTTP/1.1 200 OK\r\n"
+                             << "content-type: text/json; charset=\"utf-8\"\r\n"
+                             << "content-length:" << ""
+                             << "\r\n"
+                             << argvs["email"].toString();
+                }
+            }
+
+            if("signin" == method)
+            {
+
+            }
+        }
+        else
+        {
+            qDebug() << __TIME__ << "parse error" << parseStatus.error << parseStatus.errorString();
+
+            qDebug() << parameter;
+        }
+
+    }
+
+    qDebug() << __TIME__ << "socket" << this->socketDescriptor() << "disconnected...";
 
     this->close();
 
