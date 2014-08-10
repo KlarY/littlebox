@@ -10,7 +10,7 @@ void LittleBoxSocket::parseRequest()
 {
     qDebug() << __TIME__ << "socket" << this->socketDescriptor() << "serving...";
 
-    this->waitForReadyRead();
+    this->waitForReadyRead(3000);
 
     QByteArray request = this->readAll();
 
@@ -33,6 +33,10 @@ void LittleBoxSocket::parseRequest()
     if("POST" == tokens[0])
     {
         sendResponse(tokens[1].remove(0, 1), body);
+    }
+    else
+    {
+        sendResponse("display_error_msg\r\n", request);
     }
 }
 
