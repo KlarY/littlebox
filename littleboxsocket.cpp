@@ -73,11 +73,15 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                 {
                     QJsonObject argvs= doc.object();
 
+                    QString email = argvs["email"].toString();
+
+                    QString password = argvs["password"].toString();
+
                     response << "HTTP/1.1 200 OK\r\n"
                              << "content-type: text/json; charset=\"utf-8\"\r\n"
                              << "content-length:" << ""
                              << "\r\n"
-                             << argvs["email"].toString();
+                             << "";
                 }
             }
 
