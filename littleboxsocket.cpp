@@ -57,8 +57,8 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
     if("display_error_msg" == method)
     {
         response << "HTTP/1.1 400 Bad Request\r\n"
-                 << "content-type: text/html; charset=\"utf-8\"\r\n"
-                 << "content-length:" << "\r\n"
+                 << "content-type: text/plain; charset=\"utf-8\"\r\n"
+                 //<< "content-length:" << "\r\n"
                  << "\r\n"
                  << "Bad Request";
     }
@@ -99,8 +99,8 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                         QString uid = query.value(0).toString();
 
                         response << "HTTP/1.1 200 OK\r\n"
-                                 << "content-type: text/json; charset=\"utf-8\"\r\n"
-                                 << "content-length:" << "\r\n"
+                                 << "content-type: text/plain; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
                                  << "\r\n"
                                  << QString("{\"status\":\"success\",\"uid\":\"%1\"}").arg(uid);
                     }
@@ -111,8 +111,8 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                         QString uid = query.value(0).toString();
 
                         response << "HTTP/1.1 200 OK\r\n"
-                                 << "content-type: text/json; charset=\"utf-8\"\r\n"
-                                 << "content-length:" << "\r\n"
+                                 << "content-type: text/plain; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
                                  << "\r\n"
                                  << QString("{\"status\":\"failed\",\"uid\":\"%1\"}").arg(uid);
                     }
