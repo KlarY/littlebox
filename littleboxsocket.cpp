@@ -121,7 +121,51 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
             if("signin" == method)
             {
+                if(doc.isObject())
+                {
+                    QJsonObject argvs= doc.object();
 
+                    QString email = argvs["email"].toString();
+
+                    QString password = argvs["password"].toString();
+
+                    QString sql = QString("SELECT uid FROM usrs WHERE email = '%1'").arg(email);
+
+                    QSqlQuery query = dbWorker->execute(sql);
+
+                    if(1 == query.size())
+                    {
+//                        sql = QString("INSERT INTO usrs (email, password) VALUES ('%1', '%2')").arg(email).arg(password);
+
+//                        dbWorker->execute(sql);
+
+//                        sql = QString("SELECT uid FROM usrs WHERE email = '%1'").arg(email);
+
+//                        query = dbWorker->execute(sql);
+
+                        query.next();
+
+                        QString uid = query.value(0).toString();
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"success\",\"uid\":\"%1\"}").arg(uid);
+                    }
+                    else
+                    {
+//                        query.next();
+
+//                        QString uid = query.value(0).toString();
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":\"-1\"}");
+                    }
+                }
             }
         }
         else
