@@ -96,25 +96,25 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                         query.next();
 
-                        QString uid = query.value(0).toString();
+                        int uid = query.value(0).toInt();
 
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
                                  //<< "content-length:" << "\r\n"
                                  << "\r\n"
-                                 << QString("{\"status\":\"success\",\"uid\":\"%1\"}").arg(uid);
+                                 << QString("{\"status\":\"success\",\"uid\":%1}").arg(uid);
                     }
                     else
                     {
                         query.next();
 
-                        QString uid = query.value(0).toString();
+                        int uid = query.value(0).toInt();
 
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
                                  //<< "content-length:" << "\r\n"
                                  << "\r\n"
-                                 << QString("{\"status\":\"failed\",\"uid\":\"%1\"}").arg(uid);
+                                 << QString("{\"status\":\"failed\",\"uid\":%1}").arg(uid);
                     }
                 }
             }
@@ -145,13 +145,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                         query.next();
 
-                        QString uid = query.value(0).toString();
+                        int uid = query.value(0).toInt();
 
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
                                  //<< "content-length:" << "\r\n"
                                  << "\r\n"
-                                 << QString("{\"status\":\"success\",\"uid\":\"%1\"}").arg(uid);
+                                 << QString("{\"status\":\"success\",\"uid\":%1}").arg(uid);
                     }
                     else
                     {
@@ -163,7 +163,65 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
                                  //<< "content-length:" << "\r\n"
                                  << "\r\n"
-                                 << QString("{\"status\":\"failed\",\"uid\":\"-1\"}");
+                                 << QString("{\"status\":\"failed\",\"uid\":-1}");
+                    }
+                }
+            }
+
+            if("fillin" == method)
+            {
+                if(doc.isObject())
+                {
+                    QJsonObject items = doc.object();
+
+                    int uid = items["uid"].toInt();
+
+                    QString nickname = items["nickname"].toString();
+
+                    QString password = items["password"].toString();
+
+                    QString realname = items["realname"].toString();
+
+                    int gender = items["gender"].toInt();
+
+                    QString school = items["school"].toString();
+
+                    QString college = items["college"].toString();
+
+                    int grade = items["grade"].toInt();
+
+                    QString title = items["title"].toString();
+
+                    QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
+
+                    QSqlQuery query = dbWorker->execute(sql);
+
+                    if(1 == query.size())
+                    {
+                        sql = QString("INSERT INTO usrs (nickname, realname, gender, school, college, grade, title) VALUES ('%1', '%2', %3, '%4', '%5', %6, '%7')")
+                                .arg(nickname)
+                                .arg(realname)
+                                .arg(gender)
+                                .arg(school)
+                                .arg(college)
+                                .arg(grade)
+                                .arg(title);
+
+                        dbWorker->execute(sql);
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"success\",\"uid\":%1}").arg(uid);
+                    }
+                    else
+                    {
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":-1}");
                     }
                 }
             }
