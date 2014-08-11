@@ -198,14 +198,22 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     if(1 == query.size())
                     {
-                        sql = QString("INSERT INTO usrs (nickname, realname, gender, school, college, grade, title) VALUES ('%1', '%2', %3, '%4', '%5', %6, '%7')")
-                                .arg(nickname)
-                                .arg(realname)
-                                .arg(gender)
-                                .arg(school)
-                                .arg(college)
-                                .arg(grade)
-                                .arg(title);
+                        sql = QString("UPDATE usrs SET nickname = '%1', \
+                                                       realname = '%2', \
+                                                       gender = %3, 	\
+                                                       school = '%4', 	\
+                                                       college = '%5', 	\
+                                                       grade = %6, 		\
+                                                       title = '%7' 	\
+                                                       WHERE uid = %8")
+                                                                        .arg(nickname)
+                                                                        .arg(realname)
+                                                                        .arg(gender)
+                                                                        .arg(school)
+                                                                        .arg(college)
+                                                                        .arg(grade)
+                                                                        .arg(title)
+                                                                        .arg(uid);
 
                         dbWorker->execute(sql);
 
