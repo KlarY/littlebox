@@ -58,7 +58,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
     {
         response << "HTTP/1.1 400 Bad Request\r\n"
                  << "content-type: text/html; charset=\"utf-8\"\r\n"
-                 //<< "content-length:" << ""
+                 << "content-length:" << "\r\n"
                  << "\r\n"
                  << "Bad Request";
     }
@@ -84,25 +84,37 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QSqlQuery query = dbWorker->execute(sql);
 
-                    if(0 == query.size() || -1 == query.size() )
+                    if(0 == query.size())
                     {
                         sql = QString("INSERT INTO usrs (email, password) VALUES ('%1', '%2')").arg(email).arg(password);
 
                         dbWorker->execute(sql);
 
+                        sql = QString("SELECT uid FROM usrs WHERE email = '%1'").arg(email);
+
+                        query = dbWorker->execute(sql);
+
+                        query.next();
+
+                        QString uid = query.value(0).toString();
+
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: text/json; charset=\"utf-8\"\r\n"
-                                 << "content-length:" << ""
+                                 << "content-length:" << "\r\n"
                                  << "\r\n"
-                                 << "{\"status\":\"success\"}";
+                                 << QString("{\"status\":\"success\",\"uid\":\"%1\"}").arg(uid);
                     }
                     else
                     {
+                        query.next();
+
+                        QString uid = query.value(0).toString();
+
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: text/json; charset=\"utf-8\"\r\n"
-                                 << "content-length:" << ""
+                                 << "content-length:" << "\r\n"
                                  << "\r\n"
-                                 << "{\"status\":\"failed\"}";
+                                 << QString("{\"status\":\"failed\",\"uid\":\"%1\"}").arg(uid);
                     }
                 }
             }

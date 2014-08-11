@@ -10,7 +10,7 @@ LittleBoxDBUtil::LittleBoxDBUtil(QObject *parent) : QObject(parent)
 
     db_connection.setUserName("root");
 
-    db_connection.setPassword("y2wcg5db");
+    db_connection.setPassword("");
 
     if(!db_connection.open())
     {
