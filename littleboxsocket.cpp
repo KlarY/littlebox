@@ -129,7 +129,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString password = argvs["password"].toString();
 
-                    QString sql = QString("SELECT uid FROM usrs WHERE email = '%1'").arg(email);
+                    QString sql = QString("SELECT uid FROM usrs WHERE email = '%1' AND password = '%2'").arg(email).arg(password);
 
                     QSqlQuery query = dbWorker->execute(sql);
 
