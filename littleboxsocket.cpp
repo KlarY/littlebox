@@ -168,7 +168,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                 }
             }
 
-            if("fillin" == method)
+            if("update_personal_info" == method)
             {
                 if(doc.isObject())
                 {
@@ -222,6 +222,141 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                                  //<< "content-length:" << "\r\n"
                                  << "\r\n"
                                  << QString("{\"status\":\"success\",\"uid\":%1}").arg(uid);
+                    }
+                    else
+                    {
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":-1}");
+                    }
+                }
+            }
+
+            if("index" == method)
+            {
+                if(doc.isObject())
+                {
+                    QJsonObject items = doc.object();
+
+                    int uid = items["uid"].toInt();
+
+                    QString password = items["password"].toString();
+
+                    int offset = items["offset"].toInt();
+
+                    double longitude = items["longitude"].toDouble();
+
+                    double latitude = items["latitude"].toDouble();
+
+                    QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
+
+                    QSqlQuery query = dbWorker->execute(sql);
+
+                    if(1 == query.size())
+                    {
+                        sql = QString("SELECT pid FROM pois WHERE ((%1 - longitude) * (%2 - longitude) + (%3 - latitude) * (%4 - latitude)) < 100").arg(longitude).arg(longitude).arg(latitude).arg(latitude);
+
+                        query = dbWorker->execute(sql);
+
+
+                    }
+                    else
+                    {
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":-1}");
+                    }
+                }
+            }
+
+            if("msg_details" == method)
+            {
+                if(doc.isObject())
+                {
+                    QJsonObject items = doc.object();
+
+                    int uid = items["uid"].toInt();
+
+                    QString password = items["password"].toString();
+
+                    int mid = items["mid"].toInt();
+
+                    QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
+
+                    QSqlQuery query = dbWorker->execute(sql);
+
+                    if(1 == query.size())
+                    {
+                        sql = QString("SELECT nickname FROM usrs WHERE uid = (SELECT uid FROM msgs WHERE mid = %1)").arg(mid);
+
+                        query = dbWorker->execute(sql);
+
+                        query.next();
+
+                        QString usrname = query.value(0).toString();
+
+                        sql = QString("SELECT name FROM pois WHERE pid = (SELECT pid FROM msgs WHERE mid = %1)").arg(mid);
+
+                        query = dbWorker->execute(sql);
+
+                        query.next();
+
+                        QString poiname = query.value(0).toString();
+
+                        sql = QString("SELECT msgs.content, msgs.timestamp, COUNT(likes_of_msg.lid) FROM msgs, likes_of_msg WHERE msgs.mid = %1 ").arg(mid);
+
+                        query = dbWorker->execute(sql);
+
+                        query.next();
+
+                        QString content = query.value(0).toString();
+
+                        QString timestamp = query.value(1).toString();
+
+                        int count_of_like = query.value(2).toInt();
+
+                        sql = QString("SELECT content, timestamp FROM reviews_of_msg WHERE mid = %1").arg(mid);
+
+                        query = dbWorker->execute(sql);
+
+                        QJsonArray reviews;
+
+                        while(query.next())
+                        {
+                            QJsonObject tmp;
+
+                            tmp.insert("content", query.value(0).toString());
+
+                            tmp.insert("timestamp", query.value(1).toString());
+
+                            reviews.append(tmp);
+                        }
+
+                        QJsonObject json;
+
+                        json.insert("usrname", usrname);
+
+                        json.insert("poiname", poiname);
+
+                        json.insert("content", content);
+
+                        json.insert("timestamp", timestamp);
+
+                        json.insert("count_of_like", count_of_like);
+
+                        json.insert("reviews", reviews);
+
+                        QJsonDocument doc = QJsonDocument(json);
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << doc.toJson();
                     }
                     else
                     {
