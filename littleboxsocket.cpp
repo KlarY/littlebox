@@ -980,6 +980,45 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                     }
                 }
             }
+
+            if("change_password" == method)
+            {
+                if(doc.isObject())
+                {
+                    QJsonObject items = doc.object();
+
+                    int uid = items["uid"].toInt();
+
+                    QString password = items["password"].toString();
+
+                    QString new_password = items["new_password"].toString();
+
+                    QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
+
+                    QSqlQuery query = dbWorker->execute(sql);
+
+                    if(1 == query.size())
+                    {
+                        sql = QString("UPDATE usrs SET password = %1 WHERE uid = %2").arg(new_password).arg(uid);
+
+                        dbWorker->execute(sql);
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"success\",\"uid\":%1}").arg(uid);
+                    }
+                    else
+                    {
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":-1}");
+                    }
+                }
+            }
         }
         else
         {
