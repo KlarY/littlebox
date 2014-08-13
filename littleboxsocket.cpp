@@ -280,15 +280,17 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             QString poiname = tmp.value(0).toString();
 
-                            sql = QString("SELECT content, timestamp FROM msgs WHERE mid = %1 ").arg(query.value(0).toInt());
+                            sql = QString("SELECT mid, content, timestamp FROM msgs WHERE mid = %1 ").arg(query.value(0).toInt());
 
                             tmp = dbWorker->execute(sql);
 
                             tmp.next();
 
-                            QString content = tmp.value(0).toString();
+                            int mid = tmp.value(0).toInt();
 
-                            QString timestamp = tmp.value(1).toString();
+                            QString content = tmp.value(1).toString();
+
+                            QString timestamp = tmp.value(2).toString();
 
                             sql = QString("SELECT COUNT(lid) FROM likes_of_msg WHERE mid = %1 ").arg(query.value(0).toInt());
 
@@ -307,6 +309,8 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                             int count_of_review = tmp.value(0).toInt();
 
                             QJsonObject json;
+
+                            json.insert("mid", mid);
 
                             json.insert("usrname", usrname);
 
@@ -376,15 +380,17 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                         QString poiname = query.value(0).toString();
 
-                        sql = QString("SELECT content, timestamp FROM msgs WHERE mid = %1").arg(mid);
+                        sql = QString("SELECT mid, content, timestamp FROM msgs WHERE mid = %1").arg(mid);
 
                         query = dbWorker->execute(sql);
 
                         query.next();
 
-                        QString content = query.value(0).toString();
+                        int mid = query.value(0).toInt();
 
-                        QString timestamp = query.value(1).toString();
+                        QString content = query.value(1).toString();
+
+                        QString timestamp = query.value(2).toString();
 
                         sql = QString("SELECT COUNT(lid) FROM likes_of_msg WHERE mid = %1 ").arg(mid);
 
@@ -412,6 +418,8 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                         }
 
                         QJsonObject json;
+
+                        json.insert("mid", mid);
 
                         json.insert("usrname", usrname);
 
@@ -718,6 +726,113 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
             qDebug() << parameter;
         }
 
+        if("search_msgs" == method)
+        {
+            if(doc.isObject())
+            {
+                QJsonObject items = doc.object();
+
+                int uid = items["uid"].toInt();
+
+                QString password = items["password"].toString();
+
+                QString keyword = items["keyword"].toString();
+
+                QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
+
+                QSqlQuery query = dbWorker->execute(sql);
+
+                if(1 == query.size())
+                {
+                    sql = QString("SELECT mid FROM msgs WHERE content LIKE '%%1%'").arg(keyword);
+
+                    query = dbWorker->execute(sql);
+
+                    QJsonArray msgs;
+
+                    while(query.next())
+                    {
+                        sql = QString("SELECT nickname FROM usrs WHERE uid = (SELECT uid FROM msgs WHERE mid = %1)").arg(query.value(0).toInt());
+
+                        QSqlQuery tmp = dbWorker->execute(sql);
+
+                        tmp.next();
+
+                        QString usrname = tmp.value(0).toString();
+
+                        sql = QString("SELECT name FROM pois WHERE pid = (SELECT pid FROM msgs WHERE mid = %1)").arg(query.value(0).toInt());
+
+                        tmp = dbWorker->execute(sql);
+
+                        tmp.next();
+
+                        QString poiname = tmp.value(0).toString();
+
+                        sql = QString("SELECT mid, content, timestamp FROM msgs WHERE mid = %1 ").arg(query.value(0).toInt());
+
+                        tmp = dbWorker->execute(sql);
+
+                        tmp.next();
+
+                        int mid = tmp.value(0).toInt();
+
+                        QString content = tmp.value(0).toString();
+
+                        QString timestamp = tmp.value(1).toString();
+
+                        sql = QString("SELECT COUNT(lid) FROM likes_of_msg WHERE mid = %1 ").arg(query.value(0).toInt());
+
+                        tmp = dbWorker->execute(sql);
+
+                        tmp.next();
+
+                        int count_of_like = tmp.value(0).toInt();
+
+                        sql = QString("SELECT COUNT(rid) FROM reviews_of_msg WHERE mid = %1").arg(query.value(0).toInt());
+
+                        tmp = dbWorker->execute(sql);
+
+                        tmp.next();
+
+                        int count_of_review = tmp.value(0).toInt();
+
+                        QJsonObject json;
+
+                        json.insert("mid", mid);
+
+                        json.insert("usrname", usrname);
+
+                        json.insert("poiname", poiname);
+
+                        json.insert("content", content);
+
+                        json.insert("timestamp", timestamp);
+
+                        json.insert("count_of_like", count_of_like);
+
+                        json.insert("count_of_review", count_of_review);
+
+                        msgs.append(json);
+                    }
+
+                    QJsonDocument doc = QJsonDocument(msgs);
+
+                    response << "HTTP/1.1 200 OK\r\n"
+                             << "content-type: application/json; charset=\"utf-8\"\r\n"
+                             //<< "content-length:" << "\r\n"
+                             << "\r\n"
+                             << doc.toJson();
+                }
+                else
+                {
+                    response << "HTTP/1.1 200 OK\r\n"
+                             << "content-type: application/json; charset=\"utf-8\"\r\n"
+                             //<< "content-length:" << "\r\n"
+                             << "\r\n"
+                             << QString("{\"status\":\"failed\",\"uid\":-1}");
+                }
+            }
+        }
     }
 
     qDebug() << __TIME__ << "socket" << this->socketDescriptor() << "disconnected...";
