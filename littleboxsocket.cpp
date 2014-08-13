@@ -256,11 +256,80 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     if(1 == query.size())
                     {
-                        sql = QString("SELECT pid FROM pois WHERE ((%1 - longitude) * (%2 - longitude) + (%3 - latitude) * (%4 - latitude)) < 100").arg(longitude).arg(longitude).arg(latitude).arg(latitude);
+                        sql = QString("SElECT mid FROM msgs WHERE pid IN (SELECT pid FROM pois WHERE ((%1 - longitude) * (%2 - longitude) + (%3 - latitude) * (%4 - latitude)) < 10000)").arg(longitude).arg(longitude).arg(latitude).arg(latitude);
 
                         query = dbWorker->execute(sql);
 
+                        QJsonArray msgs;
 
+                        while(query.next())
+                        {
+                            sql = QString("SELECT nickname FROM usrs WHERE uid = (SELECT uid FROM msgs WHERE mid = %1)").arg(query.value(0).toInt());
+
+                            QSqlQuery tmp = dbWorker->execute(sql);
+
+                            tmp.next();
+
+                            QString usrname = tmp.value(0).toString();
+
+                            sql = QString("SELECT name FROM pois WHERE pid = (SELECT pid FROM msgs WHERE mid = %1)").arg(query.value(0).toInt());
+
+                            tmp = dbWorker->execute(sql);
+
+                            tmp.next();
+
+                            QString poiname = tmp.value(0).toString();
+
+                            sql = QString("SELECT content, timestamp FROM msgs WHERE mid = %1 ").arg(query.value(0).toInt());
+
+                            tmp = dbWorker->execute(sql);
+
+                            tmp.next();
+
+                            QString content = tmp.value(0).toString();
+
+                            QString timestamp = tmp.value(1).toString();
+
+                            sql = QString("SELECT COUNT(lid) FROM likes_of_msg WHERE mid = %1 ").arg(query.value(0).toInt());
+
+                            tmp = dbWorker->execute(sql);
+
+                            tmp.next();
+
+                            int count_of_like = tmp.value(0).toInt();
+
+                            sql = QString("SELECT COUNT(rid) FROM reviews_of_msg WHERE mid = %1").arg(query.value(0).toInt());
+
+                            tmp = dbWorker->execute(sql);
+
+                            tmp.next();
+
+                            int count_of_review = tmp.value(0).toInt();
+
+                            QJsonObject json;
+
+                            json.insert("usrname", usrname);
+
+                            json.insert("poiname", poiname);
+
+                            json.insert("content", content);
+
+                            json.insert("timestamp", timestamp);
+
+                            json.insert("count_of_like", count_of_like);
+
+                            json.insert("count_of_review", count_of_review);
+
+                            msgs.append(json);
+                        }
+
+                        QJsonDocument doc = QJsonDocument(msgs);
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << doc.toJson();
                     }
                     else
                     {
@@ -307,7 +376,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                         QString poiname = query.value(0).toString();
 
-                        sql = QString("SELECT msgs.content, msgs.timestamp, COUNT(likes_of_msg.lid) FROM msgs, likes_of_msg WHERE msgs.mid = %1 ").arg(mid);
+                        sql = QString("SELECT content, timestamp FROM msgs WHERE mid = %1").arg(mid);
 
                         query = dbWorker->execute(sql);
 
@@ -317,7 +386,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                         QString timestamp = query.value(1).toString();
 
-                        int count_of_like = query.value(2).toInt();
+                        sql = QString("SELECT COUNT(lid) FROM likes_of_msg WHERE mid = %1 ").arg(mid);
+
+                        query = dbWorker->execute(sql);
+
+                        query.next();
+
+                        int count_of_like = query.value(0).toInt();
 
                         sql = QString("SELECT content, timestamp FROM reviews_of_msg WHERE mid = %1").arg(mid);
 
