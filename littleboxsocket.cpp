@@ -833,6 +833,108 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                 }
             }
         }
+
+        if("search_pois" == method)
+        {
+            if(doc.isObject())
+            {
+                QJsonObject items = doc.object();
+
+                int uid = items["uid"].toInt();
+
+                QString password = items["password"].toString();
+
+                QString keyword = items["keyword"].toString();
+
+                QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
+
+                QSqlQuery query = dbWorker->execute(sql);
+
+                if(1 == query.size())
+                {
+                    sql = QString("SELECT pid FROM pois WHERE description LIKE '%%1%'").arg(keyword);
+
+                    query = dbWorker->execute(sql);
+
+                    QJsonArray msgs;
+
+                    while(query.next())
+                    {
+                        sql = QString("SELECT nickname FROM usrs WHERE uid = (SELECT uid FROM pois WHERE pid = %1)").arg(query.value(0).toInt());
+
+                        QSqlQuery tmp = dbWorker->execute(sql);
+
+                        tmp.next();
+
+                        QString usrname = tmp.value(0).toString();
+
+                        sql = QString("SELECT pid, name, description, timestamp FROM pois WHERE pid = %1 ").arg(query.value(0).toInt());
+
+                        tmp = dbWorker->execute(sql);
+
+                        tmp.next();
+
+                        int pid = tmp.value(0).toInt();
+
+                        QString poiname = tmp.value(1).toString();
+
+                        QString description = tmp.value(2).toString();
+
+                        QString timestamp = tmp.value(3).toString();
+
+                        sql = QString("SELECT COUNT(lid) FROM likes_of_poi WHERE pid = %1 ").arg(query.value(0).toInt());
+
+                        tmp = dbWorker->execute(sql);
+
+                        tmp.next();
+
+                        int count_of_like = tmp.value(0).toInt();
+
+                        sql = QString("SELECT COUNT(rid) FROM reviews_of_poi WHERE pid = %1").arg(query.value(0).toInt());
+
+                        tmp = dbWorker->execute(sql);
+
+                        tmp.next();
+
+                        int count_of_review = tmp.value(0).toInt();
+
+                        QJsonObject json;
+
+                        json.insert("pid", pid);
+
+                        json.insert("usrname", usrname);
+
+                        json.insert("poiname", poiname);
+
+                        json.insert("description", description);
+
+                        json.insert("timestamp", timestamp);
+
+                        json.insert("count_of_like", count_of_like);
+
+                        json.insert("count_of_review", count_of_review);
+
+                        msgs.append(json);
+                    }
+
+                    QJsonDocument doc = QJsonDocument(msgs);
+
+                    response << "HTTP/1.1 200 OK\r\n"
+                             << "content-type: application/json; charset=\"utf-8\"\r\n"
+                             //<< "content-length:" << "\r\n"
+                             << "\r\n"
+                             << doc.toJson();
+                }
+                else
+                {
+                    response << "HTTP/1.1 200 OK\r\n"
+                             << "content-type: application/json; charset=\"utf-8\"\r\n"
+                             //<< "content-length:" << "\r\n"
+                             << "\r\n"
+                             << QString("{\"status\":\"failed\",\"uid\":-1}");
+                }
+            }
+        }
     }
 
     qDebug() << __TIME__ << "socket" << this->socketDescriptor() << "disconnected...";
