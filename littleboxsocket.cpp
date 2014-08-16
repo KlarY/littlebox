@@ -188,7 +188,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     int student_number = items["student_number"].toInt();
 
-                    int age = items['age'].toInt();
+                    int age = items["age"].toInt();
 
                     QString school = items["school"].toString();
 
