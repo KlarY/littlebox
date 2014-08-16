@@ -182,7 +182,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString realname = items["realname"].toString();
 
+                    QString description = items["description"].toString();
+
                     int gender = items["gender"].toInt();
+
+                    int student_number = items["student_number"].toInt();
+
+                    int age = items['age'].toInt();
 
                     QString school = items["school"].toString();
 
@@ -198,20 +204,26 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     if(1 == query.size())
                     {
-                        sql = QString("UPDATE usrs SET nickname = '%1', \
-                                                       realname = '%2', \
-                                                       gender = %3, 	\
-                                                       school = '%4', 	\
-                                                       college = '%5', 	\
-                                                       grade = %6, 		\
-                                                       title = '%7' 	\
-                                                       WHERE uid = %8")
+                        sql = QString("UPDATE usrs SET nickname = '%1',    \
+                                                       realname = '%2',    \
+                                                       description = '%3', \
+                                                       age = %4,		   \
+                                                       gender = %5, 	   \
+                                                       school = '%6', 	   \
+                                                       college = '%7', 	   \
+                                                       grade = %8, 		   \
+                                                       student_number = %9 \
+                                                       title = '%10' 	   \
+                                                       WHERE uid = %11")
                                                                         .arg(nickname)
                                                                         .arg(realname)
+                                                                        .arg(description)
+                                                                        .arg(age)
                                                                         .arg(gender)
                                                                         .arg(school)
                                                                         .arg(college)
                                                                         .arg(grade)
+                                                                        .arg(student_number)
                                                                         .arg(title)
                                                                         .arg(uid);
 
