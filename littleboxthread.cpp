@@ -1,7 +1,7 @@
 #include "littleboxthread.h"
 #include "littleboxsocket.h"
 
-LittleBoxThread::LittleBoxThread(int socketDescriptor, QObject* parent) : socketDescriptor(socketDescriptor), QThread(parent)
+LittleBoxThread::LittleBoxThread(int socketDescriptor, QObject* parent) : QThread(parent), socketDescriptor(socketDescriptor)
 {
 }
 
