@@ -562,14 +562,53 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     if(1 == query.size())
                     {
-                        QString sql = QString("SELECT mid FROM msgs WHERE uid = %1").arg(uid);
+                        QString sql = QString("SELECT mid, content FROM msgs WHERE uid = %1").arg(uid);
 
                         query = dbWorker->execute(sql);
 
+                        QJsonArray msgs;
+
                         while(query.next())
                         {
-                            sql = QString("SELECT rid,  FROM reviews_of_msg WHERE");
+                            int mid = query.value(0).toInt();
+
+                            QString content = query.value(1).toString();
+
+                            QJsonObject msg;
+
+                            msg.insert("mid", mid);
+                            msg.insert("content", content);
+
+                            sql = QString("SELECT rid, nickname, content, timestamp FROM reviews_of_msg, usrs WHERE mid = %1 AND reviews_of_msg.uid = usrs.uid").arg(mid);
+
+                            QSqlQuery tmp = dbWorker->execute(sql);
+
+                            QJsonArray reviews;
+
+                            while(tmp.next())
+                            {
+                                QJsonObject review;
+
+                                review.insert("rid", tmp.value(0).toInt());
+                                review.insert("nickname", tmp.value(1).toString());
+                                review.insert("content", tmp.value(2).toString());
+                                review.insert("timestamp", tmp.value(3).toString());
+
+                                reviews.append(review);
+                            }
+
+                            msg.insert("reviews", reviews);
+
+                            msgs.append(msg);
                         }
+
+                        QJsonDocument doc = QJsonDocument(msgs);
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << doc.toJson();
                     }
                     else
                     {
@@ -1020,6 +1059,79 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                                  //<< "content-length:" << "\r\n"
                                  << "\r\n"
                                  << QString("{\"status\":\"success\",\"uid\":%1}").arg(uid);
+                    }
+                    else
+                    {
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":-1}");
+                    }
+                }
+            }
+
+            if("likes" == method)
+            {
+                if(doc.isObject())
+                {
+                    QJsonObject items = doc.object();
+
+                    int uid = items["uid"].toInt();
+
+                    QString password = items["password"].toString();
+
+                    QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
+
+                    QSqlQuery query = dbWorker->execute(sql);
+
+                    if(1 == query.size())
+                    {
+                        QString sql = QString("SELECT mid, content FROM msgs WHERE uid = %1").arg(uid);
+
+                        query = dbWorker->execute(sql);
+
+                        QJsonArray msgs;
+
+                        while(query.next())
+                        {
+                            int mid = query.value(0).toInt();
+
+                            QString content = query.value(1).toString();
+
+                            QJsonObject msg;
+
+                            msg.insert("mid", mid);
+                            msg.insert("content", content);
+
+                            sql = QString("SELECT lid, nickname FROM likes_of_msg, usrs WHERE mid = %1 AND likes_of_msg.uid = usrs.uid").arg(mid);
+
+                            QSqlQuery tmp = dbWorker->execute(sql);
+
+                            QJsonArray likes;
+
+                            while(tmp.next())
+                            {
+                                QJsonObject like;
+
+                                like.insert("lid", tmp.value(0).toInt());
+                                like.insert("nickname", tmp.value(1).toString());
+
+                                likes.append(like);
+                            }
+
+                            msg.insert("likes", likes);
+
+                            msgs.append(msg);
+                        }
+
+                        QJsonDocument doc = QJsonDocument(msgs);
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << doc.toJson();
                     }
                     else
                     {
