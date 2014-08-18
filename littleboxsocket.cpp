@@ -1244,6 +1244,60 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                     }
                 }
             }
+
+            if("show_poi" == method)
+            {
+                if(doc.isObject())
+                {
+                    QJsonObject items = doc.object();
+
+                    int uid = items["uid"].toInt();
+
+                    int pid = items["pid"].toInt();
+
+                    QString password = items["password"].toString();
+
+                    QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
+
+                    QSqlQuery query = dbWorker->execute(sql);
+
+                    if(1 == query.size())
+                    {
+                        sql = QString("SELECT pois.uid, usrs.nickname, name, pois.description, timestamp, longitude, latitude FROM pois, usrs WHERE pid = %1 AND pois.uid = usrs.uid").arg(pid);
+
+                        query = dbWorker->execute(sql);
+
+                        query.next();
+
+                        QJsonObject poi;
+
+                        poi.insert("pid", pid);
+                        poi.insert("uid", query.value(0).toInt());
+                        poi.insert("usrname", query.value(1).toString());
+                        poi.insert("poiname", query.value(2).toString());
+                        poi.insert("description", query.value(3).toString());
+                        poi.insert("timestamp", query.value(4).toString());
+                        poi.insert("longitude", query.value(5).toDouble());
+                        poi.insert("latitude", query.value(6).toDouble());
+
+                        QJsonDocument doc = QJsonDocument(poi);
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << doc.toJson();
+                    }
+                    else
+                    {
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":-1}");
+                    }
+                }
+            }
         }
         else
         {
