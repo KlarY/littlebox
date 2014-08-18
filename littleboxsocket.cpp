@@ -1385,8 +1385,6 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     int uid = items["uid"].toInt();
 
-                    int mid = items["mid"].toInt();
-
                     QString password = items["password"].toString();
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
