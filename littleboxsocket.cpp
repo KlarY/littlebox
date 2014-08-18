@@ -1395,15 +1395,35 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     if(1 == query.size())
                     {
-                        sql = QString("");
+                        sql = QString("SELECT * FROM usrs WHERE uid = %1").arg(uid);
 
                         query = dbWorker->execute(sql);
+
+                        query.next();
+
+                        QJsonObject usr;
+
+                        usr.insert("uid", query.value(0).toInt());
+                        usr.insert("email", query.value(1).toString());
+                        usr.insert("avatar", query.value(2).toString());
+                        usr.insert("nickname", query.value(3).toString());
+                        usr.insert("realname", query.value(5).toString());
+                        usr.insert("gender", query.value(6).toInt());
+                        usr.insert("school", query.value(7).toString());
+                        usr.insert("college", query.value(8).toString());
+                        usr.insert("grade", query.value(9).toString());
+                        usr.insert("title", query.value(10).toString());
+                        usr.insert("age", query.value(11).toInt());
+                        usr.insert("description", query.value(12).toString());
+                        usr.insert("student_number", query.value(13).toInt());
+
+                        QJsonDocument doc = QJsonDocument(usr);
 
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
                                  //<< "content-length:" << "\r\n"
                                  << "\r\n"
-                                 << QString("{\"status\":\"failed\",\"uid\":%1}").arg(uid);
+                                 << doc.toJson();
                     }
                     else
                     {
