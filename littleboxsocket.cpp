@@ -1298,6 +1298,99 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                     }
                 }
             }
+
+            if("like_on_poi" == method)
+            {
+                if(doc.isObject())
+                {
+                    QJsonObject items = doc.object();
+
+                    int uid = items["uid"].toInt();
+
+                    int pid = items["pid"].toInt();
+
+                    QString password = items["password"].toString();
+
+                    QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
+
+                    QSqlQuery query = dbWorker->execute(sql);
+
+                    if(1 == query.size())
+                    {
+                        sql = QString("INSERT INTO likes_of_poi (pid, uid) VALUES (%1, %2)").arg(pid).arg(uid);
+
+                        query = dbWorker->execute(sql);
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":%1}").arg(uid);
+                    }
+                    else
+                    {
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":-1}");
+                    }
+                }
+            }
+
+            if("like_on_msg" == method)
+            {
+                if(doc.isObject())
+                {
+                    QJsonObject items = doc.object();
+
+                    int uid = items["uid"].toInt();
+
+                    int mid = items["mid"].toInt();
+
+                    QString password = items["password"].toString();
+
+                    QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
+
+                    QSqlQuery query = dbWorker->execute(sql);
+
+                    if(1 == query.size())
+                    {
+                        sql = QString("INSERT INTO likes_of_msg (mid, uid) VALUES (%1, %2)").arg(mid).arg(uid);
+
+                        query = dbWorker->execute(sql);
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":%1}").arg(uid);
+                    }
+                    else
+                    {
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":-1}");
+                    }
+                }
+            }
+
+            if("profile" == method)
+            {
+
+            }
+
+            if("my_pois" == method)
+            {
+
+            }
+
+            if("my_msgs" == method)
+            {
+
+            }
         }
         else
         {
