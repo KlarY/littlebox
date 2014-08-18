@@ -268,7 +268,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     if(1 == query.size())
                     {
-                        sql = QString("SElECT mid FROM msgs WHERE pid IN (SELECT pid FROM pois WHERE ((%1 - longitude) * (%2 - longitude) + (%3 - latitude) * (%4 - latitude)) < 10000)").arg(longitude).arg(longitude).arg(latitude).arg(latitude);
+                        sql = QString("SElECT mid FROM msgs WHERE pid IN (SELECT pid FROM pois WHERE ((%1 - longitude) * (%2 - longitude) + (%3 - latitude) * (%4 - latitude)) < 10000) LIMIT %5, %6")
+                                                                                                                                                                            .arg(longitude)
+                                                                                                                                                                            .arg(longitude)
+                                                                                                                                                                            .arg(latitude)
+                                                                                                                                                                            .arg(latitude)
+                                                                                                                                                                            .arg(25 * offset)
+                                                                                                                                                                            .arg(25 * (offset + 1));
 
                         query = dbWorker->execute(sql);
 
@@ -1142,6 +1148,11 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                                  << QString("{\"status\":\"failed\",\"uid\":-1}");
                     }
                 }
+            }
+
+            if("show_pois" == method)
+            {
+
             }
         }
         else
