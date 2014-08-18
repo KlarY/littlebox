@@ -585,7 +585,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                             msg.insert("mid", mid);
                             msg.insert("content", content);
 
-                            sql = QString("SELECT rid, nickname, content, timestamp FROM reviews_of_msg, usrs WHERE mid = %1 AND reviews_of_msg.uid = usrs.uid").arg(mid);
+                            sql = QString("SELECT rid, reviews_of_msg.uid, nickname, content, timestamp FROM reviews_of_msg, usrs WHERE mid = %1 AND reviews_of_msg.uid = usrs.uid").arg(mid);
 
                             QSqlQuery tmp = dbWorker->execute(sql);
 
@@ -596,9 +596,10 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                                 QJsonObject review;
 
                                 review.insert("rid", tmp.value(0).toInt());
-                                review.insert("nickname", tmp.value(1).toString());
-                                review.insert("content", tmp.value(2).toString());
-                                review.insert("timestamp", tmp.value(3).toString());
+                                review.insert("uid", tmp.value(1).toInt());
+                                review.insert("nickname", tmp.value(2).toString());
+                                review.insert("content", tmp.value(3).toString());
+                                review.insert("timestamp", tmp.value(4).toString());
 
                                 reviews.append(review);
                             }
@@ -1110,7 +1111,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                             msg.insert("mid", mid);
                             msg.insert("content", content);
 
-                            sql = QString("SELECT lid, nickname FROM likes_of_msg, usrs WHERE mid = %1 AND likes_of_msg.uid = usrs.uid").arg(mid);
+                            sql = QString("SELECT lid, likes_of_msg.uid, nickname FROM likes_of_msg, usrs WHERE mid = %1 AND likes_of_msg.uid = usrs.uid").arg(mid);
 
                             QSqlQuery tmp = dbWorker->execute(sql);
 
@@ -1121,7 +1122,8 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                                 QJsonObject like;
 
                                 like.insert("lid", tmp.value(0).toInt());
-                                like.insert("nickname", tmp.value(1).toString());
+                                like.insert("uid", tmp.value(1).toInt());
+                                like.insert("nickname", tmp.value(2).toString());
 
                                 likes.append(like);
                             }
@@ -1152,7 +1154,95 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
             if("show_pois" == method)
             {
+                if(doc.isObject())
+                {
+                    QJsonObject items = doc.object();
 
+                    int uid = items["uid"].toInt();
+
+                    QString password = items["password"].toString();
+
+                    int offset = items["offset"].toInt();
+
+                    double longitude = items["longitude"].toDouble();
+
+                    double latitude = items["latitude"].toDouble();
+
+                    QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
+
+                    QSqlQuery query = dbWorker->execute(sql);
+
+                    if(1 == query.size())
+                    {
+                        sql = QString("SELECT pid, pois.uid, usrs.nickname, name, pois.description, timestamp, longitude, latitude FROM pois, usrs\
+                                       WHERE (((%1 - longitude) * (%2 - longitude) + (%3 - latitude) * (%4 - latitude)) < 10000) AND pois.uid = usrs.uid LIMIT %5, %6")
+                                                                                                                                                                 .arg(longitude)
+                                                                                                                                                                 .arg(longitude)
+                                                                                                                                                                 .arg(latitude)
+                                                                                                                                                                 .arg(latitude)
+                                                                                                                                                                 .arg(25 * offset)
+                                                                                                                                                                 .arg(25 * (offset + 1));
+
+                        query = dbWorker->execute(sql);
+
+                        QJsonArray pois;
+
+                        while(query.next())
+                        {
+                            int pid = query.value(0).toInt();
+
+                            int uid = query.value(1).toInt();
+
+                            QString usrname = query.value(2).toString();
+
+                            QString poiname = query.value(3).toString();
+
+                            QString description = query.value(4).toString();
+
+                            QString timestamp = query.value(5).toString();
+
+                            longitude = query.value(6).toDouble();
+
+                            latitude = query.value(7).toDouble();
+
+                            QJsonObject poi;
+
+                            poi.insert("pid", pid);
+
+                            poi.insert("uid", uid);
+
+                            poi.insert("usrname", usrname);
+
+                            poi.insert("poiname", poiname);
+
+                            poi.insert("description", description);
+
+                            poi.insert("timestamp", timestamp);
+
+                            poi.insert("longitude", longitude);
+
+                            poi.insert("latitude", latitude);
+
+                            pois.append(poi);
+                        }
+
+                        QJsonDocument doc = QJsonDocument(pois);
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << doc.toJson();
+                    }
+                    else
+                    {
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":-1}");
+                    }
+                }
             }
         }
         else
