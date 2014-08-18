@@ -1379,17 +1379,150 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
             if("profile" == method)
             {
+                if(doc.isObject())
+                {
+                    QJsonObject items = doc.object();
 
+                    int uid = items["uid"].toInt();
+
+                    int mid = items["mid"].toInt();
+
+                    QString password = items["password"].toString();
+
+                    QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
+
+                    QSqlQuery query = dbWorker->execute(sql);
+
+                    if(1 == query.size())
+                    {
+                        sql = QString("");
+
+                        query = dbWorker->execute(sql);
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":%1}").arg(uid);
+                    }
+                    else
+                    {
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":-1}");
+                    }
+                }
             }
 
             if("my_pois" == method)
             {
+                if(doc.isObject())
+                {
+                    QJsonObject items = doc.object();
 
+                    int uid = items["uid"].toInt();
+
+                    QString password = items["password"].toString();
+
+                    QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
+
+                    QSqlQuery query = dbWorker->execute(sql);
+
+                    if(1 == query.size())
+                    {
+                        sql = QString("SELECT pid, name, description, timestamp, longitude, latitude FROM pois WHERE uid = %1").arg(uid);
+
+                        query = dbWorker->execute(sql);
+
+                        QJsonArray pois;
+
+                        while(query.next())
+                        {
+                            QJsonObject poi;
+
+                            poi.insert("pid", query.value(0).toInt());
+                            poi.insert("name", query.value(1).toString());
+                            poi.insert("description", query.value(2).toString());
+                            poi.insert("timestamp", query.value(3).toString());
+                            poi.insert("longitude", query.value(4).toDouble());
+                            poi.insert("latitude", query.value(5).toDouble());
+
+                            pois.append(poi);
+                        }
+
+                        QJsonDocument doc = QJsonDocument(pois);
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << doc.toJson();
+                    }
+                    else
+                    {
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":-1}");
+                    }
+                }
             }
 
             if("my_msgs" == method)
             {
+                if(doc.isObject())
+                {
+                    QJsonObject items = doc.object();
 
+                    int uid = items["uid"].toInt();
+
+                    QString password = items["password"].toString();
+
+                    QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
+
+                    QSqlQuery query = dbWorker->execute(sql);
+
+                    QJsonArray msgs;
+
+                    if(1 == query.size())
+                    {
+                        sql = QString("SELECT mid, msgs.pid, pois.name, content, msgs.timestamp FROM msgs, pois WHERE msgs.uid = %1 AND msgs.uid = pois.pid").arg(uid);
+
+                        query = dbWorker->execute(sql);
+
+                        while(query.next())
+                        {
+                            QJsonObject msg;
+
+                            msg.insert("mid", query.value(0).toInt());
+                            msg.insert("pid", query.value(1).toInt());
+                            msg.insert("poiname", query.value(2).toString());
+                            msg.insert("content", query.value(3).toString());
+                            msg.insert("timestamp", query.value(4).toString());
+
+                            msgs.append(msg);
+                        }
+
+                        QJsonDocument doc = QJsonDocument(msgs);
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << doc.toJson();
+                    }
+                    else
+                    {
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":-1}");
+                    }
+                }
             }
         }
         else
