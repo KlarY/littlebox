@@ -68,6 +68,10 @@ void LittleBoxSocket::parseRequest()
 
     qDebug() << body;
 
+    qDebug() << __TIME__ << "socket" << this->socketDescriptor() << "disconnected...";
+
+    this->close();
+
     //============================================================================
 
 //    QStringList components = QString(request).split(QRegExp("\r\n\r\n"));
