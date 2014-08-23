@@ -52,16 +52,9 @@ void LittleBoxSocket::parseRequest()
 
     QString body;
 
-    while(true)
+    for(; this->bytesAvailable() < length;)
     {
-        qDebug() << ".";
 
-        if(this->bytesAvailable() == length)
-        {
-            qDebug() << "break";
-
-            break;
-        }
     }
 
     body = this->readAll();
