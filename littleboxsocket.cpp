@@ -54,8 +54,12 @@ void LittleBoxSocket::parseRequest()
 
     while(true)
     {
+        qDebug() << ".";
+
         if(this->bytesAvailable() == length)
         {
+            qDebug() << "break";
+
             break;
         }
     }
