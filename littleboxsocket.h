@@ -9,9 +9,14 @@ class LittleBoxSocket : public QTcpSocket
 {
     Q_OBJECT
 
-    LittleBoxDBUtil* dbWorker;
+    LittleBoxDBUtil* database;
 
     void sendResponse(QString, QString);
+
+    bool authenticate(int, QString);
+
+    void dealWithSignUP(QJsonObject);
+    void dealWithSignIn(QJsonObject);
 
 public:
     LittleBoxSocket();

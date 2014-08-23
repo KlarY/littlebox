@@ -17,7 +17,7 @@ class LittleBoxDBUtil : public QObject
 
     QElapsedTimer timer;
 
-    QSqlDatabase db_connection;
+    QSqlDatabase database;
 
     QSqlQuery query;
 

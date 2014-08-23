@@ -2,19 +2,19 @@
 
 LittleBoxDBUtil::LittleBoxDBUtil(QObject *parent) : QObject(parent)
 {
-    db_connection = QSqlDatabase::addDatabase("QMYSQL");
+    database = QSqlDatabase::addDatabase("QMYSQL");
 
-    db_connection.setDatabaseName("littlebox");
+    database.setDatabaseName("littlebox");
 
-    db_connection.setHostName("localhost");
+    database.setHostName("localhost");
 
-    db_connection.setUserName("root");
+    database.setUserName("root");
 
-    db_connection.setPassword("");
+    database.setPassword("");
 
-    if(!db_connection.open())
+    if(!database.open())
     {
-        qDebug() << db_connection.lastError().text();
+        qDebug() << database.lastError().text();
 
         exit(1);
     }

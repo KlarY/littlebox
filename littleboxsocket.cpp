@@ -8,17 +8,18 @@
 
 LittleBoxSocket::LittleBoxSocket()
 {
-    dbWorker = new LittleBoxDBUtil();
+    database = new LittleBoxDBUtil();
 
     connect(this, SIGNAL(readyRead()), this, SLOT(parseRequest()), Qt::DirectConnection);
 //    connect(this, SIGNAL(disconnected()), this, SLOT(deleteLater()), Qt::DirectConnection);
 }
 
+
 void LittleBoxSocket::parseRequest()
 {
     qDebug() << __TIME__ << "socket" << this->socketDescriptor() << "serving...";
 
-    this->waitForReadyRead(3000);
+    //this->waitForReadyRead(3000);
 
     QByteArray request = this->readAll();
 
@@ -27,6 +28,8 @@ void LittleBoxSocket::parseRequest()
     QStringList components = QString(request).split(QRegExp("\r\n\r\n"));
 
     QString headers = components[0];
+
+    qDebug() << headers;
 
     QString body = components[1];
 
@@ -48,8 +51,29 @@ void LittleBoxSocket::parseRequest()
     }
 }
 
+
+bool LittleBoxSocket::authenticate(int uid, QString password)
+{
+    if(-1 == uid || password.isEmpty() || password.isNull())
+    {
+        return false;
+    }
+    else
+    {
+
+        QString sql = QString("SELECT uid FROM usrs WHERE uid = %1 AND password = '%2'").arg(uid).arg(password);
+
+        return (1 == database->execute(sql).size()) ? true : false;
+    }
+}
+
 void LittleBoxSocket::sendResponse(QString method, QString parameter)
 {
+    if(method.isEmpty() || method.isNull() || parameter.isEmpty() || parameter.isNull())
+    {
+        return;
+    }
+
     QTextStream response(this);
 
     response.setAutoDetectUnicode(true);
@@ -58,7 +82,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
     {
         response << "HTTP/1.1 400 Bad Request\r\n"
                  << "content-type: text/html; charset=\"utf-8\"\r\n"
-                 //<< "content-length:" << "\r\n"
+                 << "content-length:" << 12 << "\r\n"
                  << "\r\n"
                  << "Bad Request";
     }
@@ -82,17 +106,17 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE email = '%1'").arg(email);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(0 == query.size())
                     {
                         sql = QString("INSERT INTO usrs (email, password) VALUES ('%1', '%2')").arg(email).arg(password);
 
-                        dbWorker->execute(sql);
+                        database->execute(sql);
 
                         sql = QString("SELECT uid FROM usrs WHERE email = '%1'").arg(email);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         query.next();
 
@@ -131,7 +155,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE email = '%1' AND password = '%2'").arg(email).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
@@ -200,7 +224,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
@@ -227,7 +251,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                                                                         .arg(title)
                                                                         .arg(uid);
 
-                        dbWorker->execute(sql);
+                        database->execute(sql);
 
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
@@ -264,7 +288,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
@@ -276,7 +300,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                                                                                                                                                                             .arg(25 * offset)
                                                                                                                                                                             .arg(25 * (offset + 1));
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         QJsonArray msgs;
 
@@ -284,7 +308,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                         {
                             sql = QString("SELECT nickname FROM usrs WHERE uid = (SELECT uid FROM msgs WHERE mid = %1)").arg(query.value(0).toInt());
 
-                            QSqlQuery tmp = dbWorker->execute(sql);
+                            QSqlQuery tmp = database->execute(sql);
 
                             tmp.next();
 
@@ -292,7 +316,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             sql = QString("SELECT name FROM pois WHERE pid = (SELECT pid FROM msgs WHERE mid = %1)").arg(query.value(0).toInt());
 
-                            tmp = dbWorker->execute(sql);
+                            tmp = database->execute(sql);
 
                             tmp.next();
 
@@ -300,7 +324,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             sql = QString("SELECT mid, content, timestamp FROM msgs WHERE mid = %1 ").arg(query.value(0).toInt());
 
-                            tmp = dbWorker->execute(sql);
+                            tmp = database->execute(sql);
 
                             tmp.next();
 
@@ -312,7 +336,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             sql = QString("SELECT COUNT(lid) FROM likes_of_msg WHERE mid = %1 ").arg(query.value(0).toInt());
 
-                            tmp = dbWorker->execute(sql);
+                            tmp = database->execute(sql);
 
                             tmp.next();
 
@@ -320,7 +344,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             sql = QString("SELECT COUNT(rid) FROM reviews_of_msg WHERE mid = %1").arg(query.value(0).toInt());
 
-                            tmp = dbWorker->execute(sql);
+                            tmp = database->execute(sql);
 
                             tmp.next();
 
@@ -378,13 +402,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("SELECT nickname FROM usrs WHERE uid = (SELECT uid FROM msgs WHERE mid = %1)").arg(mid);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         query.next();
 
@@ -392,7 +416,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                         sql = QString("SELECT name FROM pois WHERE pid = (SELECT pid FROM msgs WHERE mid = %1)").arg(mid);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         query.next();
 
@@ -400,7 +424,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                         sql = QString("SELECT mid, content, timestamp FROM msgs WHERE mid = %1").arg(mid);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         query.next();
 
@@ -412,7 +436,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                         sql = QString("SELECT COUNT(lid) FROM likes_of_msg WHERE mid = %1 ").arg(mid);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         query.next();
 
@@ -420,7 +444,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                         sql = QString("SELECT content, timestamp FROM reviews_of_msg WHERE mid = %1").arg(mid);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         QJsonArray reviews;
 
@@ -486,13 +510,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("INSERT INTO reviews_of_msg (uid, mid, content) VALUES (%1, %2, '%3')").arg(uid).arg(mid).arg(content);
 
-                        dbWorker->execute(sql);
+                        database->execute(sql);
 
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
@@ -527,13 +551,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("INSERT INTO reviews_of_poi (uid, pid, content) VALUES (%1, %2, '%3')").arg(uid).arg(pid).arg(content);
 
-                        dbWorker->execute(sql);
+                        database->execute(sql);
 
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
@@ -564,13 +588,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         QString sql = QString("SELECT mid, content FROM msgs WHERE uid = %1").arg(uid);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         QJsonArray msgs;
 
@@ -587,7 +611,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             sql = QString("SELECT rid, reviews_of_msg.uid, nickname, content, timestamp FROM reviews_of_msg, usrs WHERE mid = %1 AND reviews_of_msg.uid = usrs.uid").arg(mid);
 
-                            QSqlQuery tmp = dbWorker->execute(sql);
+                            QSqlQuery tmp = database->execute(sql);
 
                             QJsonArray reviews;
 
@@ -642,13 +666,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("UPDATE pois SET alive = 0 WHERE pid = %1").arg(pid);
 
-                        dbWorker->execute(sql);
+                        database->execute(sql);
 
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
@@ -681,13 +705,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("UPDATE msgs SET alive = 0 WHERE mid = %1").arg(mid);
 
-                        dbWorker->execute(sql);
+                        database->execute(sql);
 
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
@@ -720,13 +744,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("UPDATE likes_of_msg SET alive = 0 WHERE mid = %1 AND uid = %2").arg(mid).arg(uid);
 
-                        dbWorker->execute(sql);
+                        database->execute(sql);
 
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
@@ -759,13 +783,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("UPDATE likes_of_poi SET alive = 0 WHERE pid = %1 AND uid = %2").arg(pid).arg(uid);
 
-                        dbWorker->execute(sql);
+                        database->execute(sql);
 
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
@@ -798,13 +822,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("SELECT mid FROM msgs WHERE content LIKE '%%1%'").arg(keyword);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         QJsonArray msgs;
 
@@ -812,7 +836,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                         {
                             sql = QString("SELECT nickname FROM usrs WHERE uid = (SELECT uid FROM msgs WHERE mid = %1)").arg(query.value(0).toInt());
 
-                            QSqlQuery tmp = dbWorker->execute(sql);
+                            QSqlQuery tmp = database->execute(sql);
 
                             tmp.next();
 
@@ -820,7 +844,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             sql = QString("SELECT name FROM pois WHERE pid = (SELECT pid FROM msgs WHERE mid = %1)").arg(query.value(0).toInt());
 
-                            tmp = dbWorker->execute(sql);
+                            tmp = database->execute(sql);
 
                             tmp.next();
 
@@ -828,7 +852,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             sql = QString("SELECT mid, content, timestamp FROM msgs WHERE mid = %1 ").arg(query.value(0).toInt());
 
-                            tmp = dbWorker->execute(sql);
+                            tmp = database->execute(sql);
 
                             tmp.next();
 
@@ -840,7 +864,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             sql = QString("SELECT COUNT(lid) FROM likes_of_msg WHERE mid = %1 ").arg(query.value(0).toInt());
 
-                            tmp = dbWorker->execute(sql);
+                            tmp = database->execute(sql);
 
                             tmp.next();
 
@@ -848,7 +872,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             sql = QString("SELECT COUNT(rid) FROM reviews_of_msg WHERE mid = %1").arg(query.value(0).toInt());
 
-                            tmp = dbWorker->execute(sql);
+                            tmp = database->execute(sql);
 
                             tmp.next();
 
@@ -906,13 +930,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("SELECT pid FROM pois WHERE description LIKE '%%1%'").arg(keyword);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         QJsonArray msgs;
 
@@ -920,7 +944,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                         {
                             sql = QString("SELECT nickname FROM usrs WHERE uid = (SELECT uid FROM pois WHERE pid = %1)").arg(query.value(0).toInt());
 
-                            QSqlQuery tmp = dbWorker->execute(sql);
+                            QSqlQuery tmp = database->execute(sql);
 
                             tmp.next();
 
@@ -928,7 +952,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             sql = QString("SELECT pid, name, description, timestamp FROM pois WHERE pid = %1 ").arg(query.value(0).toInt());
 
-                            tmp = dbWorker->execute(sql);
+                            tmp = database->execute(sql);
 
                             tmp.next();
 
@@ -942,7 +966,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             sql = QString("SELECT COUNT(lid) FROM likes_of_poi WHERE pid = %1 ").arg(query.value(0).toInt());
 
-                            tmp = dbWorker->execute(sql);
+                            tmp = database->execute(sql);
 
                             tmp.next();
 
@@ -950,7 +974,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             sql = QString("SELECT COUNT(rid) FROM reviews_of_poi WHERE pid = %1").arg(query.value(0).toInt());
 
-                            tmp = dbWorker->execute(sql);
+                            tmp = database->execute(sql);
 
                             tmp.next();
 
@@ -1014,13 +1038,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("INSERT INTO pois (uid, name, description, longitude, latitude) VALUES (%1, '%2', '%3', %4, %5)").arg(uid).arg(name).arg(description).arg(longitude).arg(latitude);
 
-                        dbWorker->execute(sql);
+                        database->execute(sql);
 
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
@@ -1053,13 +1077,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("UPDATE usrs SET password = %1 WHERE uid = %2").arg(new_password).arg(uid);
 
-                        dbWorker->execute(sql);
+                        database->execute(sql);
 
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
@@ -1090,13 +1114,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         QString sql = QString("SELECT mid, content FROM msgs WHERE uid = %1").arg(uid);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         QJsonArray msgs;
 
@@ -1113,7 +1137,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             sql = QString("SELECT lid, likes_of_msg.uid, nickname FROM likes_of_msg, usrs WHERE mid = %1 AND likes_of_msg.uid = usrs.uid").arg(mid);
 
-                            QSqlQuery tmp = dbWorker->execute(sql);
+                            QSqlQuery tmp = database->execute(sql);
 
                             QJsonArray likes;
 
@@ -1170,7 +1194,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
@@ -1183,7 +1207,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                                                                                                                                                                  .arg(25 * offset)
                                                                                                                                                                  .arg(25 * (offset + 1));
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         QJsonArray pois;
 
@@ -1259,13 +1283,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("SELECT pois.uid, usrs.nickname, name, pois.description, timestamp, longitude, latitude FROM pois, usrs WHERE pid = %1 AND pois.uid = usrs.uid").arg(pid);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         query.next();
 
@@ -1313,13 +1337,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("INSERT INTO likes_of_poi (pid, uid) VALUES (%1, %2)").arg(pid).arg(uid);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
@@ -1352,13 +1376,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("INSERT INTO likes_of_msg (mid, uid) VALUES (%1, %2)").arg(mid).arg(uid);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         response << "HTTP/1.1 200 OK\r\n"
                                  << "content-type: application/json; charset=\"utf-8\"\r\n"
@@ -1389,13 +1413,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("SELECT * FROM usrs WHERE uid = %1").arg(uid);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         query.next();
 
@@ -1446,13 +1470,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
                         sql = QString("SELECT pid, name, description, timestamp, longitude, latitude FROM pois WHERE uid = %1").arg(uid);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         QJsonArray pois;
 
@@ -1501,7 +1525,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
-                    QSqlQuery query = dbWorker->execute(sql);
+                    QSqlQuery query = database->execute(sql);
 
                     QJsonArray msgs;
 
@@ -1509,7 +1533,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                     {
                         sql = QString("SELECT mid, msgs.pid, pois.name, content, msgs.timestamp FROM msgs, pois WHERE msgs.uid = %1 AND msgs.uid = pois.pid").arg(uid);
 
-                        query = dbWorker->execute(sql);
+                        query = database->execute(sql);
 
                         while(query.next())
                         {
@@ -1542,6 +1566,11 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                     }
                 }
             }
+
+            if("pics" == method)
+            {
+                qDebug() << parameter;
+            }
         }
         else
         {
@@ -1557,4 +1586,27 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
 //    this->disconnectFromHost();
 //    this->waitForDisconnected();
+}
+
+void LittleBoxSocket::dealWithSignUP(QJsonObject parameters)
+{
+    QString email = parameters["email"].toString();
+    QString password = parameters["password"].toString();
+
+    QString sql = QString("SElECT uid FROM usrs WHERE email = %1").arg(email);
+
+    QSqlQuery query = database->execute(sql);
+
+    if(0 == query.size())
+    {
+        sql = QString("INSERT INTO usrs (email, password) VALUES ('%1', '%2')").arg(email).arg(password);
+
+        query = database->execute(sql);
+
+        query.lastInsertId();
+    }
+    else
+    {
+
+    }
 }
