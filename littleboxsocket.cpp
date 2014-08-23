@@ -21,36 +21,77 @@ void LittleBoxSocket::parseRequest()
 
     //this->waitForReadyRead(3000);
 
-    QByteArray request = this->readAll();
+    //QByteArray request = this->readAll();
 
-    //============================================================================
+    QStringList lines;
 
-    QStringList components = QString(request).split(QRegExp("\r\n\r\n"));
+    QString line;
 
-    QString headers = components[0];
+    int length = 0;
 
-    qDebug() << headers;
+    while (this->canReadLine())
+    {
+        line = this->readLine();
 
-    QString body = components[1];
+        qDebug() << line;
+
+        lines.append(line);
+
+        if(line.contains("content-length", Qt::CaseInsensitive))
+        {
+            length = line.split(':')[1].toInt();
+        }
+
+        if(line == "\r\n")
+        {
+            qDebug() << "break";
+
+            break;
+        }
+    }
+
+    QString body;
+
+    while(true)
+    {
+        if(this->bytesAvailable() == length)
+        {
+            break;
+        }
+    }
+
+    body = this->readAll();
 
     qDebug() << body;
 
     //============================================================================
 
-    QStringList lines = headers.split(QRegExp("\r\n"));
+//    QStringList components = QString(request).split(QRegExp("\r\n\r\n"));
+
+//    QString headers = components[0];
+
+//    qDebug() << headers;
+
+//    QString body = components[1];
+
+//    qDebug() << body;
 
     //============================================================================
 
-    QStringList tokens = lines[0].split(' ');
+//    QStringList lines = headers.split(QRegExp("\r\n"));
 
-    if("POST" == tokens[0])
-    {
-        sendResponse(tokens[1].remove(0, 1), body);
-    }
-    else
-    {
-        sendResponse("display_error_msg", request);
-    }
+    //============================================================================
+
+//    QStringList tokens = lines[0].split(' ');
+
+//    if("POST" == tokens[0])
+//    {
+//        sendResponse(tokens[1].remove(0, 1), body);
+//    }
+//    else
+//    {
+//        sendResponse("display_error_msg", request);
+//    }
 }
 
 
