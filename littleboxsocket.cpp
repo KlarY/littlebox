@@ -19,80 +19,65 @@ void LittleBoxSocket::parseRequest()
 {
     qDebug() << __TIME__ << "socket" << this->socketDescriptor() << "serving...";
 
-    //this->waitForReadyRead(3000);
+    int requestBodyLength = 0;
 
-    //QByteArray request = this->readAll();
+    QString requestHeaderLine = "";
 
-    QStringList lines;
+    QString requestMethod = "";
 
-    QString line;
+    QString requestBody = "";
 
-    int length = 0;
+    QString destination = "";
 
-    while (this->canReadLine())
+    while(this->canReadLine())
     {
-        line = this->readLine();
+        requestHeaderLine = this->readLine();
 
-        qDebug() << line;
-
-        lines.append(line);
-
-        if(line.contains("content-length", Qt::CaseInsensitive))
+        if(requestHeaderLine.contains("HTTP/1.1"))
         {
-            length = line.split(':')[1].toInt();
+            if(3 != requestHeaderLine.split(' ').size())
+            {
+                break;
+            }
+            else
+            {
+                requestMethod = requestHeaderLine.split(' ')[0];
+
+                destination = requestHeaderLine.split(' ')[1];
+            }
         }
-
-        if(line == "\r\n")
+        else if(requestHeaderLine.contains("Content-Length"))
         {
-            qDebug() << "break";
-
+            if(2 != requestHeaderLine.split(':').size())
+            {
+                break;
+            }
+            else
+            {
+                requestBodyLength = requestHeaderLine.split(':')[1].toInt();
+            }
+        }
+        else if(requestHeaderLine == "\r\n")
+        {
             break;
         }
     }
 
-    QString body;
-
-    for(; this->bytesAvailable() < length;)
+    while(this->bytesAvailable() < requestBodyLength)
     {
         this->waitForReadyRead(1000);
     }
 
-    body = this->readAll();
+    requestBody = this->readAll();
 
-    qDebug() << body;
-
-    qDebug() << __TIME__ << "socket" << this->socketDescriptor() << "disconnected...";
-
-    this->close();
-
-    //============================================================================
-
-//    QStringList components = QString(request).split(QRegExp("\r\n\r\n"));
-
-//    QString headers = components[0];
-
-//    qDebug() << headers;
-
-//    QString body = components[1];
-
-//    qDebug() << body;
-
-    //============================================================================
-
-//    QStringList lines = headers.split(QRegExp("\r\n"));
-
-    //============================================================================
-
-//    QStringList tokens = lines[0].split(' ');
-
-//    if("POST" == tokens[0])
-//    {
-//        sendResponse(tokens[1].remove(0, 1), body);
-//    }
-//    else
-//    {
-//        sendResponse("display_error_msg", request);
-//    }
+    if("POST" == requestMethod)
+    {
+        sendResponse(destination.remove(0, 1), requestBody);
+    }
+    else
+    {
+        sendResponse(NULL, requestMethod);
+    }
 }
 
 
@@ -115,14 +100,18 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 {
     if(method.isEmpty() || method.isNull() || parameter.isEmpty() || parameter.isNull())
     {
-        return;
+        response << "HTTP/1.1 400 Bad Request\r\n"
+                 << "content-type: text/html; charset=\"utf-8\"\r\n"
+                 << "content-length:" << 12 << "\r\n"
+                 << "\r\n"
+                 << "Bad Request";
     }
 
     QTextStream response(this);
 
     response.setAutoDetectUnicode(true);
 
-    if("display_error_msg" == method)
+    if(NULL == method)
     {
         response << "HTTP/1.1 400 Bad Request\r\n"
                  << "content-type: text/html; charset=\"utf-8\"\r\n"
