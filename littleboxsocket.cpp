@@ -54,7 +54,7 @@ void LittleBoxSocket::parseRequest()
 
     for(; this->bytesAvailable() < length;)
     {
-        qDebug() << this->bytesAvailable();
+        this->waitForReadyRead(1000);
     }
 
     body = this->readAll();
