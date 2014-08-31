@@ -269,7 +269,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     if(1 == query.size())
                     {
-                        QString filename = /*"/var/www/imgs/avatars/" +*/ QString::number(uid) + "." + suffix;
+                        QString filename = "/var/www/imgs/avatars/" + QString::number(uid) + "." + suffix;
 
                         qDebug() << filename;
 
