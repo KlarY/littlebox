@@ -15,8 +15,11 @@ class LittleBoxSocket : public QTcpSocket
 
     bool authenticate(int, QString);
 
+    void saveImageFromBase64(QByteArray, QString, QString);
+
     void dealWithSignUP(QJsonObject);
     void dealWithSignIn(QJsonObject);
+
 
 public:
     LittleBoxSocket();

@@ -6,7 +6,7 @@
 
 QT       += core network sql
 
-QT       -= gui
+QT       += gui
 
 TARGET = littlebox
 CONFIG   += console

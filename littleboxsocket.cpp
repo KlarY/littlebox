@@ -1,6 +1,8 @@
 #include "littleboxsocket.h"
 #include "littleboxdbutil.h"
 
+#include <QImage>
+
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QJsonDocument>
@@ -97,7 +99,9 @@ bool LittleBoxSocket::authenticate(int uid, QString password)
 }
 
 void LittleBoxSocket::sendResponse(QString method, QString parameter)
-{
+{   
+    QTextStream response(this);
+
     if(method.isEmpty() || method.isNull() || parameter.isEmpty() || parameter.isNull())
     {
         response << "HTTP/1.1 400 Bad Request\r\n"
@@ -106,8 +110,6 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                  << "\r\n"
                  << "Bad Request";
     }
-
-    QTextStream response(this);
 
     response.setAutoDetectUnicode(true);
 
@@ -255,28 +257,42 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString title = items["title"].toString();
 
+                    QJsonObject img = items["img"].toObject();
+
+                    QByteArray content  = img["content"].toString().toUtf8();
+
+                    QString suffix = img["suffix"].toString();
+
                     QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
 
                     QSqlQuery query = database->execute(sql);
 
                     if(1 == query.size())
                     {
-                        sql = QString("UPDATE usrs SET nickname = '%1',    \
-                                                       realname = '%2',    \
-                                                       description = '%3', \
-                                                       age = %4,		   \
-                                                       gender = %5, 	   \
-                                                       school = '%6', 	   \
-                                                       college = '%7', 	   \
-                                                       grade = %8, 		   \
-                                                       student_number = %9 \
-                                                       title = '%10' 	   \
-                                                       WHERE uid = %11")
+                        QString filename = /*"/var/www/imgs/avatars/" +*/ QString::number(uid) + "." + suffix;
+
+                        qDebug() << filename;
+
+                        saveImageFromBase64(content, suffix, filename);
+
+                        sql = QString("UPDATE usrs SET nickname = '%1',    	\
+                                                       realname = '%2',    	\
+                                                       description = '%3', 	\
+                                                       age = %4,		   	\
+                                                       gender = %5, 	   	\
+                                                       avatar = '%6',		   	\
+                                                       school = '%7', 	   	\
+                                                       college = '%8', 	   	\
+                                                       grade = %9, 		   	\
+                                                       student_number = %10, \
+                                                       title = '%11' 	   	\
+                                                       WHERE uid = %12")
                                                                         .arg(nickname)
                                                                         .arg(realname)
                                                                         .arg(description)
                                                                         .arg(age)
                                                                         .arg(gender)
+                                                                        .arg(filename)
                                                                         .arg(school)
                                                                         .arg(college)
                                                                         .arg(grade)
@@ -1602,7 +1618,14 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
             if("pics" == method)
             {
-                qDebug() << parameter;
+                if(doc.isObject())
+                {
+                    QJsonObject items = doc.object();
+
+                    QString img = items["img"].toString();
+
+
+                }
             }
         }
         else
@@ -1642,4 +1665,13 @@ void LittleBoxSocket::dealWithSignUP(QJsonObject parameters)
     {
 
     }
+}
+
+void LittleBoxSocket::saveImageFromBase64(QByteArray raw, QString suffix, QString filename)
+{
+    QImage image;
+
+    qDebug() << image.loadFromData(QByteArray::fromBase64(raw), suffix.toStdString().c_str());
+
+    qDebug() << image.save(filename, suffix.toStdString().c_str());
 }
