@@ -76,6 +76,8 @@ void LittleBoxSocket::parseRequest()
 
     requestBody = this->readAll();
 
+    qDebug() << requestBody;
+
     if("POST" == requestMethod)
     {
         sendResponse(destination.remove(0, 1), requestBody);
@@ -1286,7 +1288,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     if(1 == query.size())
                     {
-                        sql = QString("SELECT pid, pois.uid, usrs.nickname, name, pois.description, timestamp, longitude, latitude FROM pois, usrs\
+                        sql = QString("SELECT pid, pois.uid, usrs.nickname, name, pois.description, images, timestamp, longitude, latitude FROM pois, usrs\
                                        WHERE (((%1 - longitude) * (%2 - longitude) + (%3 - latitude) * (%4 - latitude)) < 10000) AND pois.uid = usrs.uid LIMIT %5, %6")
                                                                                                                                                                  .arg(longitude)
                                                                                                                                                                  .arg(longitude)
@@ -1311,11 +1313,13 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             QString description = query.value(4).toString();
 
-                            QString timestamp = query.value(5).toString();
+                            QString images = query.value(5).toString();
 
-                            longitude = query.value(6).toDouble();
+                            QString timestamp = query.value(6).toString();
 
-                            latitude = query.value(7).toDouble();
+                            longitude = query.value(7).toDouble();
+
+                            latitude = query.value(8).toDouble();
 
                             QJsonObject poi;
 
@@ -1328,6 +1332,8 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                             poi.insert("poiname", poiname);
 
                             poi.insert("description", description);
+
+                            poi.insert("images", images);
 
                             poi.insert("timestamp", timestamp);
 
@@ -1375,7 +1381,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     if(1 == query.size())
                     {
-                        sql = QString("SELECT pois.uid, usrs.nickname, name, pois.description, timestamp, longitude, latitude FROM pois, usrs WHERE pid = %1 AND pois.uid = usrs.uid").arg(pid);
+                        sql = QString("SELECT pois.uid, usrs.nickname, name, pois.description, images, timestamp, longitude, latitude FROM pois, usrs WHERE pid = %1 AND pois.uid = usrs.uid").arg(pid);
 
                         query = database->execute(sql);
 
@@ -1388,9 +1394,10 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                         poi.insert("usrname", query.value(1).toString());
                         poi.insert("poiname", query.value(2).toString());
                         poi.insert("description", query.value(3).toString());
-                        poi.insert("timestamp", query.value(4).toString());
-                        poi.insert("longitude", query.value(5).toDouble());
-                        poi.insert("latitude", query.value(6).toDouble());
+                        poi.insert("images", query.value(4).toString());
+                        poi.insert("timestamp", query.value(5).toString());
+                        poi.insert("longitude", query.value(6).toDouble());
+                        poi.insert("latitude", query.value(7).toDouble());
 
                         QJsonDocument doc = QJsonDocument(poi);
 
@@ -1562,7 +1569,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     if(1 == query.size())
                     {
-                        sql = QString("SELECT pid, name, description, timestamp, longitude, latitude FROM pois WHERE uid = %1").arg(uid);
+                        sql = QString("SELECT pid, name, description, images, timestamp, longitude, latitude FROM pois WHERE uid = %1").arg(uid);
 
                         query = database->execute(sql);
 
@@ -1575,9 +1582,10 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                             poi.insert("pid", query.value(0).toInt());
                             poi.insert("name", query.value(1).toString());
                             poi.insert("description", query.value(2).toString());
-                            poi.insert("timestamp", query.value(3).toString());
-                            poi.insert("longitude", query.value(4).toDouble());
-                            poi.insert("latitude", query.value(5).toDouble());
+                            poi.insert("images", query.value(3).toString());
+                            poi.insert("timestamp", query.value(4).toString());
+                            poi.insert("longitude", query.value(5).toDouble());
+                            poi.insert("latitude", query.value(6).toDouble());
 
                             pois.append(poi);
                         }
