@@ -1,7 +1,11 @@
 #include "littleboxsocket.h"
 #include "littleboxdbutil.h"
 
+#include <QDir>
+
 #include <QImage>
+
+#include <QDateTime>
 
 #include <QJsonArray>
 #include <QJsonObject>
@@ -269,7 +273,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     if(1 == query.size())
                     {
-                        QString filename = "/var/www/imgs/avatars/" + QString::number(uid) + "." + suffix;
+                        QString filename = "/var/www/html/imgs/avatars/" + QString::number(uid) + "." + suffix;
 
                         qDebug() << filename;
 
@@ -999,7 +1003,7 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             QString usrname = tmp.value(0).toString();
 
-                            sql = QString("SELECT pid, name, description, timestamp FROM pois WHERE pid = %1 ").arg(query.value(0).toInt());
+                            sql = QString("SELECT pid, name, description, images, timestamp FROM pois WHERE pid = %1 ").arg(query.value(0).toInt());
 
                             tmp = database->execute(sql);
 
@@ -1011,7 +1015,9 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                             QString description = tmp.value(2).toString();
 
-                            QString timestamp = tmp.value(3).toString();
+                            QString images = tmp.value(3).toString();
+
+                            QString timestamp = tmp.value(4).toString();
 
                             sql = QString("SELECT COUNT(lid) FROM likes_of_poi WHERE pid = %1 ").arg(query.value(0).toInt());
 
@@ -1038,6 +1044,8 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                             json.insert("poiname", poiname);
 
                             json.insert("description", description);
+
+                            json.insert("images", images);
 
                             json.insert("timestamp", timestamp);
 
@@ -1081,6 +1089,12 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
 
                     QString description = items["description"].toString();
 
+                    QJsonObject img = items["img"].toObject();
+
+                    QByteArray content  = img["content"].toString().toUtf8();
+
+                    QString suffix = img["suffix"].toString();
+
                     double longitude = items["longitude"].toDouble();
 
                     double latitude = items["latitude"].toDouble();
@@ -1092,6 +1106,31 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                     if(1 == query.size())
                     {
                         sql = QString("INSERT INTO pois (uid, name, description, longitude, latitude) VALUES (%1, '%2', '%3', %4, %5)").arg(uid).arg(name).arg(description).arg(longitude).arg(latitude);
+
+                        QSqlQuery tmp = database->execute(sql);
+
+                        int pid = tmp.lastInsertId().toInt();
+
+                        QDir dir = QDir("/var/www/html/imgs/pois/" + QString::number(pid) + "/");
+
+                        qDebug() << dir.exists();
+
+                        qDebug() << dir.absolutePath();
+
+                        if(!dir.exists())
+                        {
+                            qDebug() << dir.mkdir(dir.absolutePath());
+                        }
+
+                        qDebug() << dir.exists();
+
+                        QString filename = "/var/www/html/imgs/pois/" + QString::number(pid) + "/" + QDateTime::currentDateTime().toString(Qt::ISODate) + "." + suffix;
+
+                        qDebug() << filename;
+
+                        saveImageFromBase64(content, suffix, filename);
+
+                        sql = QString("UPDATE pois SET images = '%1' WHERE pid = %2").arg(filename).arg(pid);
 
                         database->execute(sql);
 
@@ -1616,17 +1655,6 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                 }
             }
 
-            if("pics" == method)
-            {
-                if(doc.isObject())
-                {
-                    QJsonObject items = doc.object();
-
-                    QString img = items["img"].toString();
-
-
-                }
-            }
         }
         else
         {
