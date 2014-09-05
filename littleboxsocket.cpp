@@ -76,7 +76,7 @@ void LittleBoxSocket::parseRequest()
 
     requestBody = this->readAll();
 
-    qDebug() << requestBody;
+    //qDebug() << requestBody;
 
     if("POST" == requestMethod)
     {
@@ -1133,6 +1133,47 @@ void LittleBoxSocket::sendResponse(QString method, QString parameter)
                         saveImageFromBase64(content, suffix, filename);
 
                         sql = QString("UPDATE pois SET images = '%1' WHERE pid = %2").arg(filename).arg(pid);
+
+                        database->execute(sql);
+
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"success\",\"uid\":%1}").arg(uid);
+                    }
+                    else
+                    {
+                        response << "HTTP/1.1 200 OK\r\n"
+                                 << "content-type: application/json; charset=\"utf-8\"\r\n"
+                                 //<< "content-length:" << "\r\n"
+                                 << "\r\n"
+                                 << QString("{\"status\":\"failed\",\"uid\":-1}");
+                    }
+                }
+            }
+
+            if("add_msg" == method)
+            {
+                if(doc.isObject())
+                {
+                    QJsonObject items = doc.object();
+
+                    int uid = items["uid"].toInt();
+
+                    QString password = items["password"].toString();
+
+                    int pid = items["pid"].toInt();
+
+                    QString content = items["content"].toString();
+
+                    QString sql = QString("SELECT uid FROM usrs WHERE uid = '%1' AND password = '%2'").arg(uid).arg(password);
+
+                    QSqlQuery query = database->execute(sql);
+
+                    if(1 == query.size())
+                    {
+                        sql = QString("INSERT INTO msgs (uid, pid, content) VALUES (%1, %2, '%3')").arg(uid).arg(pid).arg(content);
 
                         database->execute(sql);
 
