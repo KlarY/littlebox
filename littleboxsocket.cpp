@@ -76,7 +76,7 @@ void LittleBoxSocket::parseRequest()
 
     requestBody = this->readAll();
 
-    //qDebug() << requestBody;
+    qDebug() << requestBody;
 
     if("POST" == requestMethod)
     {
